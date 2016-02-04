@@ -55,7 +55,7 @@
 	 * Function called by every server request
 	 */
 	var dispatcher = function(req, res) {
-		console.log("[%s] Requested: %s", req.method, req.url);
+		//console.log("[%s] Requested: %s", req.method, req.url);
 		var dispatched = false;
 
 		var bindObj = function(answer, headers) {

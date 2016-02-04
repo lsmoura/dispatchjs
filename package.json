@@ -1,0 +1,11 @@
+{
+  "name": "dispatchjs",
+  "version": "1.0",
+  "description": "Very simple nodejs dispatch",
+  "repository": "",
+  "license": "MIT",
+  "dependencies": {
+    "formidable": "^1.0.17",
+    "tiptoe": "^1.0.0"
+  }
+}

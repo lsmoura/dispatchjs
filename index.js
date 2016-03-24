@@ -1,18 +1,36 @@
 'use strict';
 
+/*
+ * valid options:
+ * * gzip_compress (string): 'no', 'always', 'auto' (default)
+ */
+
 (function(module) {
 	var http = require('http');
 	var formidable = require('formidable');
 	var tiptoe = require('tiptoe');
+	var zlib = require('zlib');
 
 	var dispatch_routes = [];
+	var dispatch_options = {
+		gzip_compress: 'auto'
+	};
 
-	var dispatch = function(port) {
+	var dispatch = function(port, options) {
 		port = port || 3000;
+
+		if (options) {
+			dispatch_options = options;
+			// Default options
+			if (!dispatch_options.hasOwnProperty('gzip_compress'))
+				dispatch_options.gzip_compress = 'auto';
+		}
+
+
 		http.createServer(dispatcher).listen(port);
 	};
 
-	dispatch.version = '1.0.0';
+	dispatch.version = '1.1.0';
 
 	/** Check if the given 'methods' object matches the requested Method.
 	 */
@@ -52,6 +70,33 @@
 	};
 
 	/**
+	 * Parse the headers into a understandable and easy-to-use format
+	 */
+	var parseHeaders = function(rawHeaders) {
+		var ret = {};
+		var i = 0;
+
+		for (i = 0; i < rawHeaders.length; i++) {
+			var headerName = rawHeaders[i++].toLowerCase();
+			var content = rawHeaders[i].toLowerCase();
+
+			if (ret.hasOwnProperty(headerName)) {
+				var oldContent = ret[headerName];
+				if (!Array.isArray(oldContent)) {
+					oldContent = [ oldContent ];
+				}
+
+				oldContent.push(content);
+				content = oldContent;
+			}
+
+			ret[headerName] = content;
+		}
+
+		return(ret);
+	};
+
+	/**
 	 * Function called by every server request
 	 */
 	var dispatcher = function(req, res) {
@@ -59,9 +104,23 @@
 		var dispatched = false;
 
 		var bindObj = function(answer, headers) {
+			var compress = false;
+
+			if (dispatch_options.gzip_compress === 'always' ||
+				(bindObj.headers.hasOwnProperty('accept-encoding') && bindObj.headers['accept-encoding'].indexOf('gzip') >= 0 && dispatch_options.gzip_compress === 'auto')) {
+				compress = true;
+				headers['content-encoding'] = 'gzip';
+			}
+
 			if (headers)
 				res.writeHead(200, headers);
-			res.end(answer);
+
+			if (compress)
+				zlib.gzip(answer, function(_, result) {
+					res.end(result);
+				})
+			else
+				res.end(answer);
 		};
 
 		bindObj.dispatch = dispatch;
@@ -70,6 +129,7 @@
 		bindObj.matches = null;
 		bindObj.req = req;
 		bindObj.res = res;
+		bindObj.headers = parseHeaders(req.rawHeaders);
 
 		tiptoe(
 			function() {

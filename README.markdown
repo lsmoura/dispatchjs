@@ -45,12 +45,16 @@ variables:
 * `this.dispatch` -- the main Dispatch function
 * `this.fields` -- if it's a POST method, it parses the fields of the form, if any (using *formidable*).
 * `this.files` -- uploaded files, if any (using *formidable*).
+* `this.headers` -- the parsed headers of the request
 
 ```javascript
-dispatch([PORT]);
+dispatch([PORT[, OPTIONS]]);
 ```
 
 Invokes the http server and start serving on the given *PORT*. Default port value is 3000.
+
+Options is an object with the following valid parameters:
+* `gzip_compress` (string): 'no', 'always', 'auto' (default) -- compresses the result using zlib when accepted by the requestes
 
 License
 ------

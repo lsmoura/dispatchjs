@@ -26,7 +26,6 @@
 				dispatch_options.gzip_compress = 'auto';
 		}
 
-
 		http.createServer(dispatcher).listen(port);
 	};
 
@@ -66,7 +65,7 @@
 			}
 		}
 
-		return(ret);
+		return(false);
 	};
 
 	/**
@@ -113,7 +112,7 @@
 			}
 
 			if (headers)
-				res.writeHead(200, headers);
+				res.writeHead(bindObj.statusCode, headers);
 
 			if (compress)
 				zlib.gzip(answer, function(_, result) {
@@ -130,6 +129,7 @@
 		bindObj.req = req;
 		bindObj.res = res;
 		bindObj.headers = parseHeaders(req.rawHeaders);
+		bindObj.statusCode = 200;
 
 		tiptoe(
 			function() {
@@ -143,7 +143,6 @@
 			},
 			function(fields, files) {
 				// Prepare bindObj
-
 				if (fields)
 					bindObj.fields = fields;
 
@@ -182,15 +181,28 @@
 			function(err) {
 				if (err) {
 					req.end('error.');
+					console.error(err);
+					return;
 				}
 
 				if (!dispatched) {
-					res.writeHead(404, {'Content-Type': 'text/plain'});
-					res.end('not found.');
+					// 404 error
+					var handler = dispatch_routes.find(function(x) {
+						return(x.method === 404);
+					});
+
+					if (handler) {
+						bindObj.statusCode = 404;
+						var callable = handler.callback.bind(bindObj);
+						callable(req, res);
+					}
+					else {
+						res.writeHead(404, {'Content-Type': 'text/plain'});
+						res.end('not found.');
+					}
 				}
 			}
 		);
-
 	};
 
 	dispatch.map = function(method, page, callback) {

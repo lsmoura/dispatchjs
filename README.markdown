@@ -46,6 +46,7 @@ variables:
 * `this.fields` -- if it's a POST method, it parses the fields of the form, if any (using *formidable*).
 * `this.files` -- uploaded files, if any (using *formidable*).
 * `this.headers` -- the parsed headers of the request
+* `this.statusCode` -- the HTTP code to pass on to the requester. Default is 200, unless the method being called is 404 (which defaults to 404).
 
 ```javascript
 dispatch([PORT[, OPTIONS]]);

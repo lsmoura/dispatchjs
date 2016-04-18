@@ -273,6 +273,11 @@
 		else
 			obj.method = method;
 
+		if (typeof page === 'function' && callback === undefined) {
+			callback = page;
+			page = '';
+		}
+
 		obj.page = page.toLowerCase();
 		obj.callback = callback;
 

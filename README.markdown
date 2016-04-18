@@ -23,12 +23,12 @@ Methods
 ------
 
 ```javascript
-dispatch.map(METHODS, REGEX, CALLBACK);
+dispatch.map(METHODS, [REGEX,] CALLBACK);
 ```
 
-**METHODS** are the names of the *HTTP METHOD* you want to respond to. It can be an array with the list of methods or a string for a single type of method. Most common methods are 'GET' and 'POST'. You can use '*' to describe any method.
+**METHODS** are the names of the *HTTP METHOD* you want to respond to. It can be an array with the list of methods or a string for a single type of method. Most common methods are 'GET' and 'POST'. You can use '*' to describe any method. You may also designate the INTEGER 404 as a method to handle non-matched requests.
 
-**REGEX** is the page to respond to. It will be matched using the nodejs [String.match()](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/String/match) function. The '^' is automatically prepended to the regex if none is provided. No '$' are automatically added.
+**REGEX** is the page to respond to. It will be matched using the nodejs [String.match()](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/String/match) function. The '^' is automatically prepended to the regex if none is provided. No '$' are automatically added. If this variable is ommited, the value considered will be '' (empty string). Be aware that an empty string will probably match anything.
 
 If a match is found, the function gets called and the matches will be available at `this.matches` variable.
 

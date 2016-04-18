@@ -3,9 +3,13 @@
 /*
  * valid options:
  * * gzip_compress (string): 'no', 'always', 'auto' (default)
+ * * serve_static (boolean/string): false (bool, default), true (bool), '<string>' (string with path to serve)
  */
 
 (function(module) {
+	var fs = require('fs');
+	var path = require('path');
+
 	var http = require('http');
 	var formidable = require('formidable');
 	var tiptoe = require('tiptoe');
@@ -13,8 +17,18 @@
 
 	var dispatch_routes = [];
 	var dispatch_options = {
-		gzip_compress: 'auto'
+		gzip_compress: 'auto',
+		serve_static: false
 	};
+
+	var mime_types = {
+		'html': 'text/html',
+		'htm': 'text/html',
+		'txt': 'text/plain'
+	};
+
+	// Static file root dir
+	var rootDir = path.join(path.dirname(require.main.filename), 'public');
 
 	var dispatch = function(port, options) {
 		port = port || 3000;
@@ -24,7 +38,11 @@
 			// Default options
 			if (!dispatch_options.hasOwnProperty('gzip_compress'))
 				dispatch_options.gzip_compress = 'auto';
+			if (!dispatch_options.hasOwnProperty('serve_static'))
+				dispatch_options.serve_static = false;
 		}
+
+		// TODO: Fix rootDir variable
 
 		http.createServer(dispatcher).listen(port);
 	};
@@ -100,7 +118,6 @@
 	 */
 	var dispatcher = function(req, res) {
 		//console.log("[%s] Requested: %s", req.method, req.url);
-		var dispatched = false;
 
 		var bindObj = function(answer, headers) {
 			var compress = false;
@@ -120,9 +137,15 @@
 				})
 			else
 				res.end(answer);
+
+			bindObj.dispatched = true;
+
+			if (bindObj.cb)
+				setImmediate(bindObj.cb);
 		};
 
 		bindObj.dispatch = dispatch;
+		bindObj.dispatched = false;
 		bindObj.fields = null;
 		bindObj.files = null;
 		bindObj.matches = null;
@@ -130,6 +153,7 @@
 		bindObj.res = res;
 		bindObj.headers = parseHeaders(req.rawHeaders);
 		bindObj.statusCode = 200;
+		bindObj.cb = null;
 
 		tiptoe(
 			function() {
@@ -159,33 +183,41 @@
 					var currentRoute = dispatch_routes[i];
 					if (matchMethod(req.method.toLowerCase(), currentRoute.method)) {
 						var pageMatch = currentRoute.page;
+
+						// Prepend '^' to every match if it's not there yet.
 						if (pageMatch[0] != '^')
 							pageMatch = '^' + pageMatch;
 
 						var matches = req.url.toLowerCase().match(pageMatch);
 						
 						if (matches) {
-							// Don't throw a 404
-							dispatched = true;
-							return(setImmediate(function() {
-								bindObj.matches = matches;
-								var callable = currentRoute.callback.bind(bindObj);
-								callable(req, res);
-							}));
+							bindObj.matches = matches;
+							bindObj.cb = this;
+							setImmediate(currentRoute.callback.bind(bindObj), req, res);
+							return;
 						}
 					}
 				}
 
 				this();
 			},
+			function() {
+				// Dispatch static
+				if (bindObj.dispatched) return(setImmediate(this));
+				if (dispatch_options.serve_static === false) return(setImmediate(this));
+
+				var reqDir = path.join(rootDir, req.url);
+
+				serveStatic.call(bindObj, res, reqDir, this);
+			},
 			function(err) {
 				if (err) {
-					req.end('error.');
+					res.end('error.');
 					console.error(err);
 					return;
 				}
 
-				if (!dispatched) {
+				if (!bindObj.dispatched) {
 					// 404 error
 					var handler = dispatch_routes.find(function(x) {
 						return(x.method === 404);
@@ -203,6 +235,33 @@
 				}
 			}
 		);
+	};
+
+	var serveStatic = function(res, reqDir, cb) {
+		var bindObj = this;
+
+		fs.stat(reqDir, function(err, stats) {
+			if (err) return(setImmediate(cb));
+
+			if (stats.isFile()) {
+				// Serve file
+				fs.readFile(reqDir, function(err, buf) {
+					if (err) return(setImmediate(cb, err));
+
+					var ext = path.extname(reqDir).substr(1);
+					var mime = 'text/plain';
+					if (mime_types.hasOwnProperty(ext))
+						mime = mime_types[ext];
+					bindObj(buf, { 'Content-Type': mime });
+				});
+			}
+			else if (stats.isDirectory()) {
+				serveStatic.call(bindObj, res, path.join(reqDir, 'index.html'), cb);
+			}
+			else {
+				setImmediate(cb);
+			}
+		});
 	};
 
 	dispatch.map = function(method, page, callback) {

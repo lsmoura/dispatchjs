@@ -55,6 +55,7 @@ Invokes the http server and start serving on the given *PORT*. Default port valu
 
 Options is an object with the following valid parameters:
 * `gzip_compress` (string): 'no', 'always', 'auto' (default) -- compresses the result using zlib when accepted by the requestes
+* serve_static (boolean/string): false (bool, default), true (bool), &lt;string&gt; (string with path to serve, relative to the main module file)
 
 License
 ------

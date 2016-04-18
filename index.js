@@ -4,6 +4,7 @@
  * valid options:
  * * gzip_compress (string): 'no', 'always', 'auto' (default)
  * * serve_static (boolean/string): false (bool, default), true (bool), '<string>' (string with path to serve)
+ * * debug (boolean): false (default) or true.
  */
 
 (function(module) {
@@ -18,7 +19,8 @@
 	var dispatch_routes = [];
 	var dispatch_options = {
 		gzip_compress: 'auto',
-		serve_static: false
+		serve_static: false,
+		debug: false
 	};
 
 	var mime_types = {
@@ -30,21 +32,38 @@
 	// Static file root dir
 	var rootDir = path.join(path.dirname(require.main.filename), 'public');
 
+	var _debug = function() {};
+
+	var _debugFunc = function() {
+		console.log.apply(null, Array.prototype.slice.call(arguments));
+	};
+
 	var dispatch = function(port, options) {
 		port = port || 3000;
 
-		if (options) {
-			dispatch_options = options;
-			// Default options
-			if (!dispatch_options.hasOwnProperty('gzip_compress'))
-				dispatch_options.gzip_compress = 'auto';
-			if (!dispatch_options.hasOwnProperty('serve_static'))
-				dispatch_options.serve_static = false;
-		}
+		dispatch.setOptions(options);
 
-		// TODO: Fix rootDir variable
+		if (!dispatch_options.debug) _debug = function() {};
 
 		http.createServer(dispatcher).listen(port);
+	};
+
+	/** Set individual option */
+	dispatch.setOption = function(key, value) {
+		dispatch_options[key] = value;
+
+		// Setup debug
+		if (dispatch_options.debug) _debug = _debugFunc;
+		else _debug = function() {};
+	};
+
+	/** Set a dictionary of options */
+	dispatch.setOptions = function(options) {
+		Object.keys(options).forEach(function(key)  {
+			dispatch.setOption(key, options[key]);
+		});
+
+		// TODO: Fix rootDir variable
 	};
 
 	dispatch.version = '1.1.0';
@@ -117,7 +136,7 @@
 	 * Function called by every server request
 	 */
 	var dispatcher = function(req, res) {
-		//console.log("[%s] Requested: %s", req.method, req.url);
+		_debug('[dispatchjs] %s Requested: %s', req.method, req.url);
 
 		var bindObj = function(answer, headers) {
 			var compress = false;
@@ -193,6 +212,7 @@
 						if (matches) {
 							bindObj.matches = matches;
 							bindObj.cb = this;
+							_debug('[dispatchjs] invoking %s', JSON.stringify(currentRoute))
 							setImmediate(currentRoute.callback.bind(bindObj), req, res);
 							return;
 						}
@@ -281,7 +301,7 @@
 		obj.page = page.toLowerCase();
 		obj.callback = callback;
 
-		console.log(obj);
+		_debug('[dispatchjs] MAP: %s', JSON.stringify(obj));
 
 		dispatch_routes.push(obj);
 	};

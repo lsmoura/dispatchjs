@@ -49,6 +49,18 @@ variables:
 * `this.statusCode` -- the HTTP code to pass on to the requester. Default is 200, unless the method being called is 404 (which defaults to 404).
 
 ```javascript
+dispatch.setOption(KEY, VALUE);
+```
+
+Set an individual option.
+
+```javascript
+dispatch.setOption(DICTIONARY);
+```
+
+Sets a lists of options.
+
+```javascript
 dispatch([PORT[, OPTIONS]]);
 ```
 
@@ -56,7 +68,8 @@ Invokes the http server and start serving on the given *PORT*. Default port valu
 
 Options is an object with the following valid parameters:
 * `gzip_compress` (string): 'no', 'always', 'auto' (default) -- compresses the result using zlib when accepted by the requestes
-* serve_static (boolean/string): false (bool, default), true (bool), &lt;string&gt; (string with path to serve, relative to the main module file)
+* `serve_static` (boolean/string): false (bool, default), true (bool), &lt;string&gt; (string with path to serve, relative to the main module file)
+* `debug` (boolean): false (default), true
 
 License
 ------

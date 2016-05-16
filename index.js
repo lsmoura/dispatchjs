@@ -26,7 +26,9 @@
 	var mime_types = {
 		'html': 'text/html',
 		'htm': 'text/html',
-		'txt': 'text/plain'
+		'txt': 'text/plain',
+		'css': 'text/css',
+		'js': 'application/javascript'
 	};
 
 	// Static file root dir

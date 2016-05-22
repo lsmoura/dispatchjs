@@ -228,7 +228,7 @@
 				if (bindObj.dispatched) return(setImmediate(this));
 				if (dispatch_options.serve_static === false) return(setImmediate(this));
 
-				var reqDir = path.join(rootDir, req.url);
+				var reqDir = path.join(rootDir, req.url.replace(/\?.*/,''));
 
 				serveStatic.call(bindObj, res, reqDir, this);
 			},
